@@ -12,8 +12,8 @@ try:
     genai.configure(api_key=API_KEY)
     
     # AQUÍ DEFINIMOS EL MODELO (esto es lo que faltaba o estaba mal puesto)
-    model = genai.GenerativeModel('gemini-1.5-pro')
-    
+    # Cambiamos 'gemini-1.5-pro' por 'gemini-1.5-flash'
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error("Error en la configuración de la API. Revisa tus Secrets en Streamlit.")
     st.stop()
