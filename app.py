@@ -1,58 +1,46 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. Configuración de la página
 st.set_page_config(page_title="Analizador de Sacrificios", layout="wide")
 st.title("📊 Procesador de PDFs de Matadero")
 
-# 2. Configuración de la API
-try:
-    # Intentamos obtener la clave de los secrets
-    if "GEMINI_API_KEY" in st.secrets:
-        api_key = st.secrets["GEMINI_API_KEY"]
-    else:
-        st.error("No se encontró la clave GEMINI_API_KEY en los Secrets de Streamlit.")
-        st.stop()
-
-    genai.configure(api_key=api_key)
-    
-    # Probamos con el nombre de modelo más compatible
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
-    
-except Exception as e:
-    st.error(f"Error de configuración: {e}")
+# Configuración de la API
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("Falta la clave GEMINI_API_KEY en los Secrets de Streamlit.")
     st.stop()
 
-# 3. Instrucciones de análisis
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+# Usamos el nombre de modelo más estándar posible
+model = genai.GenerativeModel('gemini-1.5-flash')
+
 SYSTEM_PROMPT = """
-Analiza el PDF de sacrificios adjunto. 
-Extrae los datos de los ganaderos, pesos de canal, pesos de cuero y edades.
-Calcula MER, Sacrificio, Interprofesional, Menuts y Cuero según las reglas de precios establecidas.
-Presenta un resumen por ganadero con animales totales, kg, costes, ingresos y beneficio final.
-Devuelve el resultado en una tabla Markdown clara.
+Analiza el PDF adjunto. 
+1. Extrae datos de ganaderos y animales.
+2. Calcula: MER (+12=9€, -12=6€), Sacrificio (Peso*0.2396€), Interprof (0.50€), Menut (38€ ingreso).
+3. Calcula Cuero (ingreso): >=41kg: 0.85€/kg; 36-40.9kg: 1.05€/kg; <36kg: 1.65€/kg.
+4. Muestra tabla resumen por ganadero con beneficio neto.
 """
 
-# 4. Interfaz de usuario
 uploaded_file = st.file_uploader("Sube el PDF de sacrificios", type=['pdf'])
 
 if uploaded_file is not None:
-    with st.spinner('Procesando documento...'):
+    with st.spinner('Procesando...'):
         try:
-            # Convertimos el PDF a bytes para enviarlo
-            file_bytes = uploaded_file.read()
+            # Leemos el archivo
+            pdf_parts = [
+                {
+                    "mime_type": "application/pdf",
+                    "data": uploaded_file.getvalue()
+                }
+            ]
             
-            # Realizamos la petición
-            response = model.generate_content([
-                SYSTEM_PROMPT,
-                {"mime_type": "application/pdf", "data": file_bytes}
-            ])
+            # Generamos contenido
+            response = model.generate_content([SYSTEM_PROMPT, pdf_parts[0]])
             
-            if response.text:
-                st.success("Análisis finalizado")
-                st.markdown(response.text)
-            else:
-                st.warning("El modelo no devolvió texto. Revisa el contenido del PDF.")
-                
+            st.success("¡Completado!")
+            st.markdown(response.text)
+            
         except Exception as e:
-            # Si falla el modelo flash, intentamos avisar del error específico
-            st.error(f"Error al procesar el contenido: {e}")
+            st.error(f"Error específico: {e}")
+            st.info("Si el error persiste, intenta generar una nueva API Key en Google AI Studio.")
