@@ -2,17 +2,18 @@ import streamlit as st
 import google.generativeai as genai
 import pandas as pd
 import io
+import streamlit as st
+import google.generativeai as genai
 
+# Esta línea es la que conecta con el "Secret" que acabas de guardar
+API_KEY = st.secrets["GEMINI_API_KEY"]
+genai.configure(api_key=API_KEY)
 # Configuración de la página
+
 st.set_page_config(page_title="Analizador de Sacrificios", layout="wide")
 st.title("📊 Procesador de PDFs de Matadero")
 st.markdown("Sube el PDF de sacrificios y obtén el análisis detallado al instante.")
 
-# --- CONFIGURACIÓN DE LA API ---
-# Es recomendable usar st.secrets para la API Key en producción
-API_KEY = "TU_API_KEY_AQUI" 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro')
 
 # --- EL PROMPT (Tu lógica de negocio) ---
 SYSTEM_PROMPT = """
